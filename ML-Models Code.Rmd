@@ -4,7 +4,88 @@ author: "Jean-Yves Djamen"
 date: 'Fall 2019'
 output: pdf_document
 ---
+\def\d{\mathcal{D}}
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
+
+```{r echo=FALSE}
+suppressWarnings(suppressMessages(library(network)))
+suppressWarnings(suppressMessages(library(sna)))
+suppressWarnings(suppressMessages(library(ggplot2)))
+suppressWarnings(suppressMessages(library(GGally)))
+suppressWarnings(suppressMessages(library(igraph)))
+```
+
+
+\tableofcontents{}
+\pagebreak
+
+\section{Given a graph, Generate ML Coefficient Matrix}
+```{r echo=FALSE}
+ml_gen<- function(n, mat_vector){
+  #'We will assume that the function takes in as input n, and an nxn matrix detailing the values of each vertex. It will retrun the ML coef matrix
+  
+  #create adjacency matrix from input. I understand it as the transpose of what r interprets
+  edge_adjacency<- t(matrix(mat_vector, nrow=n, ncol=n))
+  #creates directed network graph from matrix with weights as input
+  network_graph<-graph_from_adjacency_matrix(edge_adjacency, mode="directed", weighted=TRUE)
+  
+  #Finds all simple paths from a starting node
+  paths<-list()
+  for(e in 1:n)
+    paths<-c(paths,(all_simple_paths(graph=network_graph,from=e, mode="out")))
+  #initialize path value list
+  path_vals<-list()
+  #for every path, compose coeficients
+  for(p in paths){
+    starting_node=p[0,1]
+    first_coef=edge_adjacency[starting_node,starting_node]
+    inner_prod=1
+    #path coefficients (after initial one )
+    for(i in 2:length(p)){
+      current_coef<-edge_adjacency[p[i-1],p[i]]
+      inner_prod=current_coef*inner_prod
+    }
+    #make list of path products
+    path_vals<-c(path_vals,first_coef*inner_prod)
+  }
+  #matrix to be returned 
+  ml.coef.mat<-matrix(0,n,n)
+  #fill in the diagonal entries
+  for(i in 1:n){
+    ml.coef.mat[i,i]=edge_adjacency[i,i]
+  }
+  #fill out the values at each cell
+  for(e in 1:length(path_vals)){
+    current.path=paths[e]
+    source=current.path[[1]][1]
+    destination=current.path[[1]][length(current.path[[1]])]
+    #the value only gets filled out if current value is less than the desired one
+    if(ml.coef.mat[source,destination]<path_vals[e]){
+      ml.coef.mat[source,destination]<-path_vals[e][[1]]
+    }
+  }
+  return(ml.coef.mat)
+}
+graph_gen<-function(n,mat_vector){
+  mat<- matrix(mat_vector, nrow=n, ncol=n)
+  colnames(mat)=rownames(mat)=1:n
+  network=graph_from_adjacency_matrix(t(mat))
+  plot(network)
+}
+```
+We will assume that the input is a graph $\d= (V,E)$ with $n$ vertices.  Our function `ml_gen` will  output the ML coefficient matrix $B$ as shown bellow.
+```{r}
+m<- 4
+m_mat<-c(2,3,4,0,
+         0,2,0,4,
+         0,0,3,5,
+         0,0,0,2)
+ml_gen(m,m_mat)
+```
+
+\section{Given an ML Coefficient Matrix Generate Graph}
+Factorization problem
+
