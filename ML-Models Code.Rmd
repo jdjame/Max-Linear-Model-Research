@@ -1,0 +1,10 @@
+---
+title: "Max-Linear Models"
+author: "Jean-Yves Djamen"
+date: 'Fall 2019'
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
