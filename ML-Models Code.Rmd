@@ -16,6 +16,8 @@ suppressWarnings(suppressMessages(library(sna)))
 suppressWarnings(suppressMessages(library(ggplot2)))
 suppressWarnings(suppressMessages(library(GGally)))
 suppressWarnings(suppressMessages(library(igraph)))
+suppressWarnings(suppressMessages(library(DescTools)))
+suppressWarnings(suppressMessages(library(VGAM)))
 ```
 
 
@@ -25,7 +27,7 @@ suppressWarnings(suppressMessages(library(igraph)))
 \section{Given a graph, Generate ML Coefficient Matrix}
 ```{r echo=FALSE}
 ml_gen<- function(n, mat_vector){
-  #'We will assume that the function takes in as input n, and an nxn matrix detailing the values of each vertex. It will retrun the ML coef matrix
+  #'We will assume that the function takes in as input n, and an nxn matrix detailing the values of each edge It will retrun the ML coef matrix
   
   #create adjacency matrix from input. I understand it as the transpose of what r interprets
   edge_adjacency<- t(matrix(mat_vector, nrow=n, ncol=n))
@@ -79,13 +81,54 @@ graph_gen<-function(n,mat_vector){
 We will assume that the input is a graph $\d= (V,E)$ with $n$ vertices.  Our function `ml_gen` will  output the ML coefficient matrix $B$ as shown bellow.
 ```{r}
 m<- 4
-m_mat<-c(2,3,4,0,
+m_mat<-c(2,3,4,1,
          0,2,0,4,
-         0,0,3,5,
+         0,2,3,5,
          0,0,0,2)
-ml_gen(m,m_mat)
+coef.mat<-ml_gen(m,m_mat)
 ```
 
-\section{Given an ML Coefficient Matrix Generate Graph}
-Factorization problem
+\section{Generating some data}
+To generate the data, we need to use the coefficient matrix $B$. From the analysis of this matrix, we can see that any comlumn $i$ denotes the maximum path between node $i$ and each of its ancestors (denoted $An(i)$). In each column, a zero in the $j^{th}$ element means that there is no path between $i$ and $j$. So, to build the function that will generate data from the coefficient matrix, we compute the element wise product of our random vector $Z$ and each column $B_i$. Then, the maximum element in each of these will give us the value for our recursive structural model.
+```{r}
+#given a max linear matrix and an optional input, generate some data
+data_gen<-function(ml.mat, dist="exponential",lambda=1, s=1, alpha=1, m=0){
+  #number of rvs to create 
+  n<-nrow(ml.mat)
+  if(dist=="frechet"){
+    #s is scale, alpha is shape and m is location
+    z<-rfrechet(n, loc=m, scale=s, shape=alpha)
+  }
+  else{
+    z<-rexp(n, rate=1)
+  }
+  X=c()
+  #Now, z is our matrix of n samples 
+  for(col in 1:n){
+    #take each of the columns in the Coefficient matrix
+    row=ml.mat[,col]
+    #compute the element wise product (b_{ji}Z_j)
+    #intuitively each column is the b_{ji} element
+    prod=(z*row)
+    #we find X.i by maximizing all of these 
+    X.i=max(prod)
+    X<-c(X,X.i)
+  }
+  print(ml.mat)
+  return(data.frame("noise"=z,"data"=X ))
+}
+lete=data_gen(coef.mat,dist="exponential")
+typeof(lete)
+```
 
+```{r}
+exponential.1<-data_gen(coef.mat,dist="exponential")
+exponential.2<-data_gen(coef.mat,dist="exponential")
+frechet.1<-data_gen(coef.mat,dist="frechet")
+frechet.2<-data_gen(coef.mat,dist="frechet")
+plot(exponential.1$noise, exponential.1$data, main="Scatterplot of Noise vs Data (Exponential 1)", xlab="Noise Variable Z ", ylab="Data Point X", pch=12)
+plot(exponential.2$noise, exponential.2$data, main="Scatterplot of Noise vs Data (Exponential 2)", xlab="Noise Variable Z ", ylab="Data Point X", pch=12)
+plot(frechet.1$noise, frechet.1$data, main="Scatterplot of Noise vs Data (Frechet 1)", xlab="Noise Variable Z ", ylab="Data Point X", pch=12)
+plot(frechet.2$noise, frechet.2$data, main="Scatterplot of Noise vs Data (Frechet 2)", xlab="Noise Variable Z ", ylab="Data Point X", pch=12)
+
+```
