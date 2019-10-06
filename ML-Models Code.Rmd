@@ -83,52 +83,105 @@ We will assume that the input is a graph $\d= (V,E)$ with $n$ vertices.  Our fun
 m<- 4
 m_mat<-c(2,3,4,1,
          0,2,0,4,
-         0,2,3,5,
+         0,0,3,5,
          0,0,0,2)
 coef.mat<-ml_gen(m,m_mat)
 ```
 
 \section{Generating some data}
-To generate the data, we need to use the coefficient matrix $B$. From the analysis of this matrix, we can see that any comlumn $i$ denotes the maximum path between node $i$ and each of its ancestors (denoted $An(i)$). In each column, a zero in the $j^{th}$ element means that there is no path between $i$ and $j$. So, to build the function that will generate data from the coefficient matrix, we compute the element wise product of our random vector $Z$ and each column $B_i$. Then, the maximum element in each of these will give us the value for our recursive structural model.
+To generate the data, we need to use the coefficient matrix $B$. From the analysis of this matrix, we can see that any comlumn $j$ denotes the maximum path between anode $j$ and each of its ancestors (denoted $An(j)$). In each column, a zero in the $i^{th}$ element means that there is no path between $i$ and $j$. So, to build the function that will generate data from the coefficient matrix, we compute the element wise product of our random vector $Z$ and each column $B_i$. Then, the maximum element in each of these will give us the value for our recursive structural model. In the following function this step is repeated several times to produce several sample points. 
 ```{r}
 #given a max linear matrix and an optional input, generate some data
-data_gen<-function(ml.mat, dist="exponential",lambda=1, s=1, alpha=1, m=0){
-  #number of rvs to create 
+data_gen<-function(ml.mat, dist="exponential",lambda=1, s=1, alpha=1, m=0, samples=100){
+  #lambda,s ,alpha, m are all parameters for the distribution
+  #sampels denotes how many samples we woiuld like to generate
+  #This is the number of nodes in our graph
   n<-nrow(ml.mat)
+  
   if(dist=="frechet"){
     #s is scale, alpha is shape and m is location
-    z<-rfrechet(n, loc=m, scale=s, shape=alpha)
+    z<-rfrechet(n*samples, loc=m, scale=s, shape=alpha)
   }
+  
   else{
-    z<-rexp(n, rate=1)
+    z<-rexp(n*samples, rate=1)
   }
-  X=c()
-  #Now, z is our matrix of n samples 
-  for(col in 1:n){
-    #take each of the columns in the Coefficient matrix
-    row=ml.mat[,col]
-    #compute the element wise product (b_{ji}Z_j)
-    #intuitively each column is the b_{ji} element
-    prod=(z*row)
-    #we find X.i by maximizing all of these 
-    X.i=max(prod)
-    X<-c(X,X.i)
-  }
-  print(ml.mat)
-  return(data.frame("noise"=z,"data"=X ))
+  
+  #turning Z into a matrix of (n x samples) size where n is the number of nodes in graph and samples is the number of samples we want to generate
+  z=matrix(z, nrow=n, ncol=samples)
+  
+  #now we use our max prod function to calculate the max prod for each of our functions
+  return(t(apply(z, 2, function(x) max_times_prd(x, ml.mat))))
 }
-lete=data_gen(coef.mat,dist="exponential")
-typeof(lete)
+
+max_times_prd<-function(mat1,mat2){
+  #This function takes in two matrixes and does the max times algebta
+  #here mat 1 is the Z column and mat2 is the coefficient matrix
+  return(apply(mat2, 2, function(x) max(mat1*x)))
+}
 ```
 
+\subsection{Exponential Data}
+With the exponential data we observe the following:
+
+\subsubsection{100 Samples}
 ```{r}
-exponential.1<-data_gen(coef.mat,dist="exponential")
-exponential.2<-data_gen(coef.mat,dist="exponential")
-frechet.1<-data_gen(coef.mat,dist="frechet")
-frechet.2<-data_gen(coef.mat,dist="frechet")
-plot(exponential.1$noise, exponential.1$data, main="Scatterplot of Noise vs Data (Exponential 1)", xlab="Noise Variable Z ", ylab="Data Point X", pch=12)
-plot(exponential.2$noise, exponential.2$data, main="Scatterplot of Noise vs Data (Exponential 2)", xlab="Noise Variable Z ", ylab="Data Point X", pch=12)
-plot(frechet.1$noise, frechet.1$data, main="Scatterplot of Noise vs Data (Frechet 1)", xlab="Noise Variable Z ", ylab="Data Point X", pch=12)
-plot(frechet.2$noise, frechet.2$data, main="Scatterplot of Noise vs Data (Frechet 2)", xlab="Noise Variable Z ", ylab="Data Point X", pch=12)
-
+exponential.1<-data_gen(coef.mat,dist="exponential",samples=100)
+pobs <- apply(exponential.1,2,rank)/(101)
+pairs(pobs)
 ```
+From this, we can see something. I fear I am not trained enough to fully understand this though
+
+\subsubsection{1000 Samples}
+```{r}
+exponential.2<-data_gen(coef.mat,dist="exponential",samples=1000)
+pobs <- apply(exponential.2,2,rank)/(1001)
+pairs(pobs)
+```
+
+\subsubsection{10000 Samples}
+```{r}
+exponential.3<-data_gen(coef.mat,dist="exponential",samples=10000)
+pobs <- apply(exponential.3,2,rank)/(10001)
+pairs(pobs)
+```
+
+
+\subsubsection{100000 Samples}
+```{r}
+exponential.4<-data_gen(coef.mat,dist="exponential",samples=100000)
+pobs <- apply(exponential.4,2,rank)/(100001)
+pairs(pobs)
+```
+
+
+
+\subsection{Frechet Distribution}
+\subsubsection{100 Samples}
+```{r}
+frechet.1<-data_gen(coef.mat,dist="frechet",samples=100)
+pobs <- apply(frechet.1,2,rank)/(101)
+pairs(pobs)
+```
+
+\subsubsection{1000 Samples}
+```{r}
+frechet.2<-data_gen(coef.mat,dist="frechet",samples=1000)
+pobs <- apply(frechet.2,2,rank)/(1001)
+pairs(pobs)
+```
+
+\subsubsection{10000 Samples}
+```{r}
+frechet.3<-data_gen(coef.mat,dist="frechet",samples=10000)
+pobs <- apply(frechet.3,2,rank)/(10001)
+pairs(pobs)
+```
+
+\subsubsection{100000 Samples}
+```{r}
+frechet.4<-data_gen(coef.mat,dist="frechet",samples=100000)
+pobs <- apply(frechet.4,2,rank)/(100001)
+pairs(pobs)
+```
+
