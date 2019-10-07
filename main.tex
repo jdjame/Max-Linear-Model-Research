@@ -1,6 +1,6 @@
 \documentclass[12pt]{article}
 \usepackage[utf8]{inputenc}
-\usepackage[margin=.7in]{geometry}
+\usepackage[margin=1.2in]{geometry}
 \usepackage{amssymb}
 \usepackage{amsmath}
 \usepackage{mathtools}
@@ -26,8 +26,9 @@
 \newcommand\expp[1]{\exp\bigg\{#1\bigg\}}
 \newcommand\der[2]{\frac{\partial #1}{\partial #2}}
 \newcommand{\ds}{\displaystyle}
-\newtheorem{case}{Case}
-\newtheorem{note}{Note}
+
+\theoremstyle{definition}
+\newtheorem{theorem}{Theorem}
 
 \theoremstyle{definition}
 \newtheorem{definition}{Definition}
@@ -127,8 +128,6 @@ $$b_{ji}=\bigvee_{p\in P_{ji}}d_{ji} \text{ for }j\in an(i);b_{ii}\in c_{ii}; b_
 \end{itemize}
 From our construction, our new model for $X_i$ comes with a slightly new explanation. In \textit{"pseudo stats"}, the model is given by :
 $$X_i=\max_{\text{for all nodes }j\in V}\bigg( \max(\text{path weight between nodes }i \text{ and }j ) * \text{noise associated to }j\bigg) $$
-
-\textbf{SKIPPED THE SOME FORMALITIES (proof its an rsem, graph structure stuff, complexity reduction, ordering ...) }
 \pagebreak
 
 \subsubsection{Example of Max-Linear Model}
@@ -198,5 +197,37 @@ Our vector $\x$ is a ML model with ML coefficient matrix
 \]
 To visualize the generation of this matrix given a graph $\d$ and weights $C$, please consult r code.
 
+\section{Model Distribution}
+Now that we have the model, our goal is to find the underlying distribution of each of the $X_i$. To do this, we need a stronger tool than the ones at our disposal.
 
+\subsection{Copulas}
+A \textbf{Copula} is a cumulative distribution function with univariate, uniform margins\footnote{ref Copula and copula models}. This term is derived from Latin and refers to a link. In this context, copulas help to determine the dependence between random variables.
+
+\noindent \begin{theorem}[Sklar's Theorem] Given random variables $X_1,\hdots,X_d$ with cumulative distribution functions $F_1,\hdots,F_d$, there always exists a copula $C$ such that 
+$$P(X_1\leq x_1, \hdots, X_d\leq x_d)=C\{ F_1(x_1),\hdots ,F_d(x_d)\}\hspace{1cm}\forall x_1\hdots,x_d\in\mathbb{R}$$
+This means that the joint cumulative distribution can be represented by a function of the marginal probability distributions. Furthermore, if the cumulative distribution functions are continuous, then the copula $C$ is unique and can be retrieved from the joint cdf of $(X_1,\hdots,X_d)$ as
+$$C(u_1,\hdots,u_d)=P\{X_1\leq F_1^{-1}(u_1),\hdots,X_d\leq F_d^{-1}(u_d)\}$$
+This means that the function $C$ can be retrieved by the joint cdf of the original random variable vector $(X_1,\hdots,X_d)$ after the \textbf{integral transform} has been applied to each of the components: $(F_1(X_1),\hdots,F_d(X_d))$. This is because
+$$P\{X_1\leq x_1,\hdots X_d\leq x_d\}=P\{F_1(X_1)\leq F_1(x_1),\hdots,F_d(X_d)\leq F_d(x_d)\}$$
+So the copula that corresponds to the LHS is the same as the one that corresponds to the RHS. Since the joint probability on the RHS is easier to calculate (probability integral transform leads to uniform rv), we can first find its copula, and use it to find the joint cdf of the original random variables 
+\begin{align*}
+    C\{ F_1(x_1),\hdots ,F_d(x_d)\}&=P\{X_1\leq x_1,\hdots X_d\leq x_d\}\\
+    &=P\{F_1(X_1)\leq F_1(x_1),\hdots,F_d(X_d)\leq F_d(x_d)\}\\
+    &=P\{U_1\leq u_1,\hdots,U_d\leq u_d\}\\
+    &=C\{u_1,\hdots,u_d\}\\
+    &=P\{X_1\leq F_1^{-1}(u_1),\hdots,X_d\leq F_d^{-1}(u_d)\}
+\end{align*}
+\end{theorem}
+\footnote{Needs some more refining of this section}
+
+\subsection{Copulas and ML-Models}
+When working with data we want to apply a ML model to, we use the copulas to determine the joint cdfs of the random variables. From the data, we have $$\{(X_{11},\hdots,X_{1d}), \hdots, (X_{n1}, \hdots X_{nd})\}$$To build a copula, we need the points 
+$$\{\{(F_1(X_{11}),\hdots,F_d(X_{1d})), \hdots, (F_1(X_{n1}), \hdots F_d(X_{nd}))\}\}$$
+To represent a sample from $C$. Because we do not have the analytic values for $\{F_1,\hdots,F_d\}$, we estimate them using the following formula
+$$\widehat{F}_i(x)=\frac{1}{n}\sum_{j=1}^n\mathbbm{1}(X_{ij}\leq x)$$
+So we build our cdf by finding the number of our observations that were less than a certain threshold.
+
+ 
+ DERIVATION FOR EXPONENTIAL AND FRECHET GOES HERE 
+ 
 \end{document}
