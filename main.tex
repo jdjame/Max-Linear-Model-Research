@@ -22,6 +22,7 @@
 \def\sumn{\sum^n_{i=1}}
 \def\i{\mathcal{J}}
 \def\x{\mathbf{X}}
+\def\inv{^{-1}}
 \newcommand{\til}[1]{\underset{\sim}{#1}}
 \newcommand\expp[1]{\exp\bigg\{#1\bigg\}}
 \newcommand\der[2]{\frac{\partial #1}{\partial #2}}
@@ -197,6 +198,8 @@ Our vector $\x$ is a ML model with ML coefficient matrix
 \]
 To visualize the generation of this matrix given a graph $\d$ and weights $C$, please consult r code.
 
+\pagebreak
+
 \section{Model Distribution}
 Now that we have the model, our goal is to find the underlying distribution of each of the $X_i$. To do this, we need a stronger tool than the ones at our disposal.
 
@@ -204,30 +207,112 @@ Now that we have the model, our goal is to find the underlying distribution of e
 A \textbf{Copula} is a cumulative distribution function with univariate, uniform margins\footnote{ref Copula and copula models}. This term is derived from Latin and refers to a link. In this context, copulas help to determine the dependence between random variables.
 
 \noindent \begin{theorem}[Sklar's Theorem] Given random variables $X_1,\hdots,X_d$ with cumulative distribution functions $F_1,\hdots,F_d$, there always exists a copula $C$ such that 
-$$P(X_1\leq x_1, \hdots, X_d\leq x_d)=C\{ F_1(x_1),\hdots ,F_d(x_d)\}\hspace{1cm}\forall x_1\hdots,x_d\in\mathbb{R}$$
-This means that the joint cumulative distribution can be represented by a function of the marginal probability distributions. Furthermore, if the cumulative distribution functions are continuous, then the copula $C$ is unique and can be retrieved from the joint cdf of $(X_1,\hdots,X_d)$ as
-$$C(u_1,\hdots,u_d)=P\{X_1\leq F_1^{-1}(u_1),\hdots,X_d\leq F_d^{-1}(u_d)\}$$
-This means that the function $C$ can be retrieved by the joint cdf of the original random variable vector $(X_1,\hdots,X_d)$ after the \textbf{integral transform} has been applied to each of the components: $(F_1(X_1),\hdots,F_d(X_d))$. This is because
-$$P\{X_1\leq x_1,\hdots X_d\leq x_d\}=P\{F_1(X_1)\leq F_1(x_1),\hdots,F_d(X_d)\leq F_d(x_d)\}$$
-So the copula that corresponds to the LHS is the same as the one that corresponds to the RHS. Since the joint probability on the RHS is easier to calculate (probability integral transform leads to uniform rv), we can first find its copula, and use it to find the joint cdf of the original random variables 
-\begin{align*}
-    C\{ F_1(x_1),\hdots ,F_d(x_d)\}&=P\{X_1\leq x_1,\hdots X_d\leq x_d\}\\
-    &=P\{F_1(X_1)\leq F_1(x_1),\hdots,F_d(X_d)\leq F_d(x_d)\}\\
-    &=P\{U_1\leq u_1,\hdots,U_d\leq u_d\}\\
-    &=C\{u_1,\hdots,u_d\}\\
-    &=P\{X_1\leq F_1^{-1}(u_1),\hdots,X_d\leq F_d^{-1}(u_d)\}
-\end{align*}
+$$P(X_1\leq x_1, \hdots, X_d\leq x_d)=C( F_1(x_1),\hdots ,F_d(x_d))\hspace{1cm}\forall x_1\hdots,x_d\in\mathbb{R}$$
+This means that the joint cumulative distribution of random variables $\ds \{X_i\}_{i=1}^d $ can be represented by a function of the marginal probability distributions.
 \end{theorem}
-\footnote{Needs some more refining of this section}
+\begin{theorem}[Extension to Sklar's Theorem]
+If the cumulative distribution functions are continuous, then the copula $C$ is unique and can be retrieved by the joint cdf of the original random variable vector $(X_1,\hdots,X_d)$ after the \textbf{integral transform} has been applied to each of the components: $(F_1(X_1),\hdots,F_d(X_d))$.
+\begin{proof}
+In this paper, we show this result holds for the set of continuous and strictly increasing functions $\ds \{F_i\}_{i=1}^d$. The result also holds for monotonic increasing functions but is slightly harder to show.
+From the restriction on the functions, we know that $\forall x,y \in \mathbb{R} ,\forall 1\leq i\leq d$ we have $x\leq y\implies F_i(x)\leq F_i(y)$. We can now use this to prove our result. 
+\begin{align*}
+    C( F_1(x_1),\hdots ,F_d(x_d))&=P(X_1\leq x_1,\hdots, X_d\leq x_d)\\
+    &=P(F_1(X_1)\leq F_1(x_1),\hdots,F_d(X_d)\leq F_d(x_d))\\
+    &=P(F_1(X_1)\leq u_1,\hdots,F_d(X_d)\leq u_d)\\
+    &=P(X_1\leq F_1^{-1}(u_1),\hdots,X_d\leq F_d^{-1}(u_d))\\
+    &=C(u_1,\hdots,u_d)
+\end{align*}
+From this we note that the copula can be set to the joint cdf of the random vector obtained by element wise integral transform.
+\end{proof}
+
+\end{theorem}
+
 
 \subsection{Copulas and ML-Models}
-When working with data we want to apply a ML model to, we use the copulas to determine the joint cdfs of the random variables. From the data, we have $$\{(X_{11},\hdots,X_{1d}), \hdots, (X_{n1}, \hdots X_{nd})\}$$To build a copula, we need the points 
-$$\{\{(F_1(X_{11}),\hdots,F_d(X_{1d})), \hdots, (F_1(X_{n1}), \hdots F_d(X_{nd}))\}\}$$
+Let us assume that we have data that consists of  $n$ observations from $d$ sources denoted $X_1,\hdots, X_d$. If we want to use a ML model to learn more about the underlying structure and relationship between these sources, we make use of copulas. To calculate the copulas, we must calculate the following:
+\begin{enumerate}
+    \item The marginal cdfs $\ds\{F_1, \hdots, F_d\}$ \item The joint cdf $H(x_1,\hdots,x_d)=F(X_1\leq x_1, \hdots, X_d\leq x_d)$
+    \item The copula $C(u_1,\hdots,c_d)=H(F\inv_1(u_1),\hdots,F\inv_d(u_d))$
+\end{enumerate}
+
+\subsubsection{Marginal cdfs (theory)}
+Assume the random variables $X_1,\hdots, X_d$ follow a ML model with i.i.d shock random variables $Z_1,\hdots, Z_d$ and ML coefficient matrix 
+\[ B=\begin{bmatrix}
+&b_{11} &b_{12}&\hdots& b_{1n-1}& b_{1n}\\
+&b_{21} &b_{22}&\hdots& b_{2n-1}& b_{2n}\\
+&\vdots&\vdots&\ddots & \vdots& \vdots \\
+&\vdots&\vdots&\hdots & \ddots& \vdots \\
+&b_{n1}& b_{n2} & \hdots &b_{nn-1}& b_{nn}\\
+\end{bmatrix}
+\]
+Where $b_{ij}$ is the maximum weight associated with any path from $i$ to $j$. We can calculate the marginal cdf for each of the $X_k$:
+\begin{align*}
+    F_{X_k}(x_k)&=P(X_k\leq x_k)\\
+    &=P(\bigvee_{j=1}^db_{jk}Z_j\leq x_k)\\
+    &=\prod_{j=1}^dP(Z_j\leq \frac{x_k}{b_{jk}})\\
+    &=\prod_{j=1}^dF_{Z_j}( \frac{x_k}{b_{jk}})
+\end{align*}
+Now, if we assume that $Z_i\overset{iid}{\thicksim}$ Frechet$(\alpha)$ we get the following result
+\begin{align*}
+    F_{k}(x_k)&=\prod_{j=1}^d\exp\bigg\{{-\big(\frac{x_k}{b_{jk}}}\big)^{-\alpha}\bigg\}\\
+    &=\exp\bigg\{{-\sum_{j=1}^d\big(\frac{x_k}{b_{jk}}}\big)^{-\alpha}\bigg\}\\
+    &=\exp\bigg\{{-x_k^{-\alpha}\sum_{j=1}^d\big({b_{jk}}}\big)^{\alpha}\bigg\}\\
+    \implies F_{k}\inv(x)&=\bigg(\frac{\sum_{j=1}^d{b_{jk}}}{\log(x)} \bigg)^{{1}/{\alpha}}
+\end{align*}
+It is important to note that if $j\notin An(k)$ then $b_{jk}=0$. This means that the sum $\ds \sum_{j=1}^d{b_{jk}}$ is equivalent to $\ds \sum_{j\in An(k)}{b_{jk}}$.
+\subsubsection{Marginal cdfs (from data)}
+From the data, we have $$\{(X_{11},\hdots,X_{1d}), \hdots, (X_{n1}, \hdots X_{nd})\}$$To build a copula, we need the points 
+$$\{(F_1(X_{11}),\hdots,F_d(X_{1d})), \hdots, (F_1(X_{n1}), \hdots F_d(X_{nd}))\}$$
 To represent a sample from $C$. Because we do not have the analytic values for $\{F_1,\hdots,F_d\}$, we estimate them using the following formula
 $$\widehat{F}_i(x)=\frac{1}{n}\sum_{j=1}^n\mathbbm{1}(X_{ij}\leq x)$$
-So we build our cdf by finding the number of our observations that were less than a certain threshold.
+This is an application of the \textbf{rank plot} method. Essentially, for each random variable $X_{i}$, we rank all observations from smallest to greatest. Then, the rank (position in observation vector) of each observation helps us build our cdf $F_i$. In practice, we use 
+$$\widehat{F}_i(x)=\frac{1}{n+1}\sum_{j=1}^n\mathbbm{1}(X_{ij}\leq x)$$
+because it leads to nicer results.
+\subsubsection{Joint cdf}
+In general, the joint cdf $H$ can be calculated in the following way:
+\begin{align*}
+    H(x_1,\hdots, x_d)&=P(X_1\leq x_1,\hdots,X_d\leq x_d)\\
+    &=P(\bigvee_{j=1}^db_{j1}Z_j\leq x_1, \hdots, \bigvee_{j=1}^db_{jd}Z_j\leq x_d)\\
+    &=P(Z_1\leq{\bigwedge_{k=1}^d\frac{x_k}{b_{1k}}},\hdots, Z_d\leq\bigwedge_{k=1}^d\frac{x_k}{b_{dk}})\\
+    &=\prod_{i=1}^dF_i(\bigwedge_{k=1}^d\frac{x_k}{b_{ik}})
+\end{align*}
+When we deal with Frechét shock, this simplifies.
+\begin{align*}
+    F_i(\bigwedge_{k=1}^d\frac{x_k}{b_{ik}})&=\exp\bigg\{-\bigg(\bigwedge_{k=1}^d\frac{x_k}{b_{ik}}\bigg)^{-\alpha}\bigg\}\\
+    &=\exp\bigg\{-\bigvee_{k=1}^d \bigg( \frac{b_{ik}}{x_k} \bigg)^\alpha\bigg\}\\
+    \implies H(x_1,\hdots, x_d)&=\prod_{i=1}^d\exp\bigg\{-\bigvee_{k=1}^d \bigg( \frac{b_{ik}}{x_k} \bigg)^\alpha\bigg\}\\
+    &=\exp\bigg\{ -\sum_{i=1}^d \bigvee_{k=1}^d \bigg( \frac{b_{ik}}{x_k} \bigg)^\alpha \bigg\}\\
+    &=\exp\bigg\{ -\sum_{i=1}^d \bigvee_{k=1}^d \bigg( \frac{b_{ik}}{x_k} \bigg)^\alpha \bigg\}
+\end{align*}
+Again we note that the sum indices can be changed to be in terms of ancestors. This is because for any two random variables $i,k$, if $i \notin An(k)$, then $b_{ik}=0$. So we can write 
+$$H(x_1,\hdots,x_d)=\exp\bigg\{ -\sum_{i\in An(k)} \bigvee_{k=1}^d \bigg( \frac{b_{ik}}{x_k} \bigg)^\alpha \bigg\}$$
 
+\subsubsection{Building the Copula}
+Now, we can put it all together to find the copula.
+\begin{align*}
+    C(u_1,\hdots, u_d)&=H(F_1\inv(u_1),\hdots, F_d\inv(u_d))\\
+\end{align*}
+When dealing with Frechét shock, the calculation becomes:
+\begin{align*}
+a_k&=\sum_{j=1}^d{b_{jk}}\\
+F_{k}\inv(x)&=\bigg(\frac{\sum_{j=1}^d{b_{jk}}}{\log(x)} \bigg)^{{1}/{\alpha}}=-\log(x)^{1/\alpha}a_k^{1/\alpha}\\
+H(x_1,\hdots,x_d)&=\exp\bigg\{ -\sum_{i=1}^d \bigvee_{k=1}^d \bigg( \frac{b_{ik}}{x_k} \bigg)^\alpha \bigg\}\\
+     C(u_1,\hdots, u_d)&=\exp\bigg\{ -\sum_{i=1}^d \bigvee_{k=1}^d \frac{b_{ik}^\alpha}{a_k}(-\log(u_k))\bigg\}\\
+     &=\prod_{i=1}^d\exp\bigg\{- \bigvee_{k=1}^d \frac{b_{ik}^\alpha}{a_k}(-\log(u_k))\bigg\}\\
+     &=\prod_{i=1}^d\exp\bigg\{- \bigvee_{k=1}^d -\log(u_k^\frac{b_{ik}^\alpha}{a_k})\bigg\}\\
+     &=\prod_{i=1}^d\exp\bigg\{ \bigwedge_{k=1}^d \log(u_k^\frac{b_{ik}^\alpha}{a_k})\bigg\}\\
+     \ds&=\prod_{i=1}^d \bigwedge_{k=1}^d u_k^\frac{b_{ik}^\alpha}{a_k}
+\end{align*}
+This is the copula for a ML model with Frechét shock.
  
- DERIVATION FOR EXPONENTIAL AND FRECHET GOES HERE 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
  
 \end{document}
