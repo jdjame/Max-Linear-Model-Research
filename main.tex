@@ -256,8 +256,8 @@ Now, if we assume that $Z_i\overset{iid}{\thicksim}$ Frechet$(\alpha)$ we get th
 \begin{align*}
     F_{k}(x_k)&=\prod_{j=1}^d\exp\bigg\{{-\big(\frac{x_k}{b_{jk}}}\big)^{-\alpha}\bigg\}\\
     &=\exp\bigg\{{-\sum_{j=1}^d\big(\frac{x_k}{b_{jk}}}\big)^{-\alpha}\bigg\}\\
-    &=\exp\bigg\{{-x_k^{-\alpha}\sum_{j=1}^d\big({b_{jk}}}\big)^{\alpha}\bigg\}\\
-    \implies F_{k}\inv(x)&=\bigg(\frac{\sum_{j=1}^d{b_{jk}}}{\log(x)} \bigg)^{{1}/{\alpha}}
+    &=\exp\bigg\{{-x_k^{-\alpha}\sum_{j=1}^d{b_{jk}}^{\alpha}}\bigg\}\\
+    \implies F_{k}\inv(u)&=\bigg(\frac{\sum_{j=1}^d{b_{jk}^\alpha}}{-\log(u)} \bigg)^{{1}/{\alpha}}
 \end{align*}
 It is important to note that if $j\notin An(k)$ then $b_{jk}=0$. This means that the sum $\ds \sum_{j=1}^d{b_{jk}}$ is equivalent to $\ds \sum_{j\in An(k)}{b_{jk}}$.
 \subsubsection{Marginal cdfs (from data)}
@@ -294,8 +294,8 @@ Now, we can put it all together to find the copula.
 \end{align*}
 When dealing with Frechét shock, the calculation becomes:
 \begin{align*}
-a_k&=\sum_{j=1}^d{b_{jk}}\\
-F_{k}\inv(x)&=\bigg(\frac{\sum_{j=1}^d{b_{jk}}}{\log(x)} \bigg)^{{1}/{\alpha}}=-\log(x)^{1/\alpha}a_k^{1/\alpha}\\
+a_k&=\sum_{j=1}^d{b_{jk}^\alpha}\\
+F_{k}\inv(u)&=\bigg(\frac{\sum_{j=1}^d{b_{jk}^\alpha}}{-\log(u)} \bigg)^{{1}/{\alpha}}=\bigg(\frac{a_k}{- \log(u)}\bigg)^{1/\alpha}\\
 H(x_1,\hdots,x_d)&=\exp\bigg\{ -\sum_{i=1}^d \bigvee_{k=1}^d \bigg( \frac{b_{ik}}{x_k} \bigg)^\alpha \bigg\}\\
      C(u_1,\hdots, u_d)&=\exp\bigg\{ -\sum_{i=1}^d \bigvee_{k=1}^d \frac{b_{ik}^\alpha}{a_k}(-\log(u_k))\bigg\}\\
      &=\prod_{i=1}^d\exp\bigg\{- \bigvee_{k=1}^d \frac{b_{ik}^\alpha}{a_k}(-\log(u_k))\bigg\}\\
@@ -304,14 +304,78 @@ H(x_1,\hdots,x_d)&=\exp\bigg\{ -\sum_{i=1}^d \bigvee_{k=1}^d \bigg( \frac{b_{ik}
      \ds&=\prod_{i=1}^d \bigwedge_{k=1}^d u_k^\frac{b_{ik}^\alpha}{a_k}
 \end{align*}
 This is the copula for a ML model with Frechét shock.
- 
- 
- 
- 
- 
- 
- 
- 
+
+\section{Extreme Value Copulas}
+\begin{definition}[{Extreme Value Copula}]\footnote{def from Bivariate EVC paper}
+A bivariate copula $C$ is termed an \textbf{Extreme Value Copula} if, $\forall \ t>0, u,v\in[0,1]$, $C(u^t,v^t)=C(u,v)^t$. A finite measure $\delta$ acting on the unit simplex (triangle/set of points that add up to one) uniquely characterizes these copulas. This measure also defines a \textbf{dependence function} $A$ which (in the bivariate case) also uniquely characterizes an EVC. In fact, a copula $C$ is an EVC iff
+\begin{align*}
+    C(u,v)=(uv)^{A\big( \frac{\log u}{\log uv} \big)}, \hspace{1cm} u,v\in[0,1]\tag{1}
+\end{align*}
+\end{definition}
+For the rest of this section, unless specifically noted, we will be exclusively working with bivariate EVCs.
+\subsection{Spectral Measure}
+First, lets define the unit simplex $S_2=\{(u,v)\in [0,1]^2:u+v=1 \}$. Then, the EVC's measure $\delta$ is a finite measure on $S_2$ called the \textbf{spectral measure} satisfies the condition:
+$$\int_{S_2}ud\delta(u,v)=\int_{S_2}vd\delta(u,v)=1$$
+From this, it is simple to see that $\delta(S_2)=2$. Now, let us consider another measure on this set $\delta^*$ such that $\ds\delta^*=\frac{\delta}{2}$. We note that this transformation of $\delta$ is a probability measure with the unit simplex as support. In fact, 
+$$(X,Y)\thicksim \delta^* \implies \E[X]=\E[Y]=\frac{1}{2}$$
+
+\subsection{Dependence Function}
+From the copula measure, we define the \textbf{dependence function} as 
+$$A(t)=2*\E[(tX\vee ((1-t)Y)]$$ 
+Where $X,Y\thicksim \delta^*$. $A$ also has the following properties:
+\begin{itemize}
+    \item $A:[0,1]\rightarrow[1/2,1]$
+    \item $A$ is continuous and convex
+    \item $A(0)=A(1)=1$
+    \item $\max \{t,1-t\}\leq A(t)\leq 1$ for $t\in[0,1]$
+\end{itemize}
+\subsection{Reparameterization of EVCs}
+Since we are working on the unit simplex in two dimensions, we can use a mapping from the real number line to the unit simplex to simplify our calculations. This is done using the bijection $\phi$ (defined below)
+\begin{align*}
+    \ds \phi: [0,1] &\rightarrow S_2\\
+    x&\rightarrow(x,1-x)
+\end{align*}
+With this bijection, we can project the unit simplex on the real number line. This means that we can now redefine our probability measure $\delta^*$ as a univariate distribution such that 
+$$X\thicksim \delta^* \implies \E[X]=\E[1-X]=\frac{1}{2}$$
+Similarly, we can redefine our dependence function as 
+$$A(t)=2* \E[(tX\vee ((1-t)(1-X))]$$
+
+\subsection{Representation of Bivariate EVCs}
+Lets say our finite measure $\delta^*$ defines a discrete random variable $X$ with d atoms $\{a_1, \hdots, a_d\}$ each having a probability associated to it $\{p_1, \hdots, p_d\}$. Then, to calculate our copula, we must first calculate the dependence function:
+\begin{align*}
+    A(t)&=2* \E[(tX\vee (1-t)(1-X))]\\
+    &=2*\sum_{i=1}^d(ta_i\vee (1-t)(1-a_i))p_i
+\end{align*}
+Then, the first step to using (1) to calculate the copula is to calculate $A$:
+\begin{align*}
+\bar{a}_i&=1-a_i \hspace{1cm} \forall 1\leq i\leq d\\
+    A\big( \frac{\log u}{\log uv} \big)&=2*\sum_{i=1}^d\bigg(\frac{\log u}{\log uv}a_i\vee(1-\frac{\log u}{\log uv})\bar{a}_i\bigg)p_i\\
+    &=2*\sum_{i=1}^d\bigg(\frac{\log u}{\log uv}a_i\vee\frac{\log v}{\log uv}\bar{a}_i\bigg)p_i\\
+    &=2*\frac{1}{\log(uv)}\sum_{i=1}^d(a_i\log u \wedge \bar{a}_i\log v)p_i\\
+\end{align*}
+Now we use this to calculate the copula:
+\begin{align*}
+    C(u,v)&=(uv)^{A\big( \frac{\log u}{\log uv} \big)}\\
+    \implies C(u,v)&=(uv)^{2*\frac{1}{\log(uv)}\sum_{i=1}^d(a_i\log u \wedge \bar{a}_i\log v)p_i}\\
+    &=\exp\{2*\sum_{i=1}^d(a_i\log u \wedge \bar{a}_i\log v)p_i\}\\
+    &=\prod_{i=1}^d\exp\{2*a_ip_i\log u \wedge 2*\bar{a}_ip_i\log v\}\\
+    &=\prod_{i=1}^d\bigg(u^{a_i}\wedge v^{\bar{a}_i}\bigg)^{2p_i}
+\end{align*}
+
+From this, we see that any bivariate EVC copula can be retrieved from the product of other copulas. This follows \textbf{Theorem 1} from \footnote{Insert paper name here} that states that any copula $C$ can be written as 
+$$C(u,v)= \prod_{i=1}^dC_{a_i,\bar{a}_i}^{p_i}$$
+where $C_{a_i,\bar{a}_i}$ is a copula of the form $C_{s,t}(u,v)=\min(u^s,v^t)$ and $\sum_{i=1}^dp_i=1$. Because the spectral measure used above differs from the paper's [1] measure by a factor of $\frac{1}{2}$ we find that the sum of our exponent is 2 rather than 1.
+\subsection{Bivariate EVCs and Our Model}
+Now, we may want to rewrite the copula that arises from our model in the bivariate EVC form. For this, we will only consider two nodes at a time. Consider a bivariate EVC with atoms at points $\ds\{c_j\}_{j=1}^2$\footnote{What exactly do the atoms relate to? Values for rv? more details }
+\begin{align*}
+    \textit{From the model}&& C(u_1,u_2)&=\prod_{j=1}^2u_1^{\frac{b_{j1}^\alpha}{a_1}}\wedge u_2^{\frac{b_{j2}^\alpha}{a_2}}\\
+    \textit{From EVCs}&&C(u_1,u_2)&= \prod_{j=1}^2 u_1^{2c_jp_j}\wedge u_2^{(1-c_j)p_j} \\
+\end{align*}
+From these, we can solve a simple system of equations to see that 
+
+$$\prod_{j=1}^2 u_1^{2c_jp_j}\wedge u_2^{(1-c_j)p_j}=\prod_{j=1}^2u_1^{\frac{b_{j1}^\alpha}{a_1}}\wedge u_2^{\frac{b_{j2}^\alpha}{a_2}}\implies p_j=\frac{b_{j1}^\alpha}{2a_1}+\frac{b_{j2}^\alpha}{2a_2}$$
+From this, we can then calculate the location of the atoms 
+$$\ds c_j=\frac{\frac{b_{j1}^\alpha}{a_1}}{\frac{b_{j1}^\alpha}{a_1}+\frac{b_{j2}^\alpha}{a_2}}$$
  
  
  
