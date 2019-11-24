@@ -1,6 +1,6 @@
 \documentclass[12pt]{article}
 \usepackage[utf8]{inputenc}
-\usepackage[margin=1.2in]{geometry}
+\usepackage[margin=1in]{geometry}
 \usepackage{amssymb}
 \usepackage{amsmath}
 \usepackage{mathtools}
@@ -53,7 +53,7 @@
 The goal of Bayesian Networks is to represent a joint distribution over a set of random variables using a directed acyclic graph. Let $\mathcal{D}=(V,E)$ be such a graph. The set of nodes $V$ will represent random variables and the set of edges $E$ will correspond to the direct influence between two nodes. Intuitively, edge orientation can be interpreted at a causal relation between two rvs.
 
 \noindent
-When working with Bayesian Networks, nodes (rvs) are independent from other nodes given their immediate parents. This is referred to as the he \textbf{Markov property}.
+When working with Bayesian Networks, nodes (rvs) are independent from other nodes given their immediate parents. This is referred to as the \textbf{Markov property}.
 \begin{center}
 \tikzset{every picture/.style={line width=0.75pt}}
 \begin{tikzpicture}[x=0.75pt,y=0.75pt,yscale=-1,xscale=1]
@@ -120,11 +120,15 @@ The weights represent relative quantities that a risk originates with a certain 
 \noindent This model can be re-written in the form $$X_i:= \bigvee_{j=1}^db_{ji}Z_j\ \ \  i=1,\hdots,d$$
 $B=(b_{ij})_{d\times d}$ is a matrix with non-negative entries called the \textbf{max linear coefficient matrix} of $\x$ and its entries are dubbed \textbf{max-linear coefficients}. The construction of the matrix $B$ is fairly intuitive. First, for any two nodes $(j,i)$ we assign a weight to every path $p= [j=k_0\rightarrow k_1\rightarrow \hdots \rightarrow k_n=i]$. This weight is equal to the edge product allong the path $p$ multiplied by the noise variable (denoted $Z_j$) associated with the starting node $j$. Below is an equation that might assist in visualizing the edge product $d_{ji}(p)$:
 $$d_{ji}(p):=c_{k_0,k_0}\cdot c_{k_0,k_1}\cdot\hdots\cdot c_{k_{n-2},k_{n-1}}\cdot c_{k_{n-1},k_n}=c_{k_0,k_0}\prod_{l=0}^{n-1}c_{k_l,k_{l+1}}$$
-Let $an(i)$ denote the ancestors of a node and $P_{ji}$ denote all possible paths from node $j$ to node $i$. Then, the ML coefficients for any $i\in V$ are given by:
-$$b_{ji}=\bigvee_{p\in P_{ji}}d_{ji} \text{ for }j\in an(i);b_{ii}\in c_{ii}; b_{ji}=0 \text{ for } j \in V \setminus (an(i)\cup \{i\})$$
+Let $an(i)$ denote the ancestors of a node, $An(i)=an(i)\cup\{i\}$, and $P_{ji}$ denote all possible paths from node $j$ to node $i$. Then, the ML coefficients for any $i\in V$ are given by:
+\begin{align*}
+    b_{ii}&= c_{ii}\\
+    b_{ji}&=\bigvee_{p\in P_{ji}}d_{ji} \text{ for }j\in an(i)\\
+    b_{ji}&=0 \text{ for } j \in V \setminus An(i)
+\end{align*}
 \begin{itemize}
+ \item The coefficient between a node $i$ and itself is simply the weight $c_{ii}$
     \item The coefficient between any two nodes $(j,i)$ is given by the path with the largest weight
-    \item The coefficient between a node $i$ and itself is simply the weight $c_{ii}$
     \item The coefficient between any two nodes with no path between them is $0$
 \end{itemize}
 From our construction, our new model for $X_i$ comes with a slightly new explanation. In \textit{"pseudo stats"}, the model is given by :
@@ -214,12 +218,13 @@ This means that the joint cumulative distribution of random variables $\ds \{X_i
 If the cumulative distribution functions are continuous, then the copula $C$ is unique and can be retrieved by the joint cdf of the original random variable vector $(X_1,\hdots,X_d)$ after the \textbf{integral transform} has been applied to each of the components: $(F_1(X_1),\hdots,F_d(X_d))$.
 \begin{proof}
 In this paper, we show this result holds for the set of continuous and strictly increasing functions $\ds \{F_i\}_{i=1}^d$. The result also holds for monotonic increasing functions but is slightly harder to show.
-From the restriction on the functions, we know that $\forall x,y \in \mathbb{R} ,\forall 1\leq i\leq d$ we have $x\leq y\implies F_i(x)\leq F_i(y)$. We can now use this to prove our result. 
+From the restriction on the functions, we know that $\forall x,y \in \mathbb{R} ,\forall i\ s.t.\ 1\leq i\leq d$ we have $x\leq y\implies F_i(x)\leq F_i(y)$. We can now use this to prove our result. 
 \begin{align*}
     C( F_1(x_1),\hdots ,F_d(x_d))&=P(X_1\leq x_1,\hdots, X_d\leq x_d)\\
     &=P(F_1(X_1)\leq F_1(x_1),\hdots,F_d(X_d)\leq F_d(x_d))\\
     &=P(F_1(X_1)\leq u_1,\hdots,F_d(X_d)\leq u_d)\\
     &=P(X_1\leq F_1^{-1}(u_1),\hdots,X_d\leq F_d^{-1}(u_d))\\
+    &=C(F_1(F_1^{-1}(u_1)),\hdots,F_d(F_d^{-1}(u_d)))\\
     &=C(u_1,\hdots,u_d)
 \end{align*}
 From this we note that the copula can be set to the joint cdf of the random vector obtained by element wise integral transform.
@@ -231,18 +236,18 @@ From this we note that the copula can be set to the joint cdf of the random vect
 \subsection{Copulas and ML-Models}
 Let us assume that we have data that consists of  $n$ observations from $d$ sources denoted $X_1,\hdots, X_d$. If we want to use a ML model to learn more about the underlying structure and relationship between these sources, we make use of copulas. To calculate the copulas, we must calculate the following:
 \begin{enumerate}
-    \item The marginal cdfs $\ds\{F_1, \hdots, F_d\}$ \item The joint cdf $H(x_1,\hdots,x_d)=F(X_1\leq x_1, \hdots, X_d\leq x_d)$
+    \item The marginal cdfs $\ds\{F_1, \hdots, F_d\}$ \item The joint cdf $H(x_1,\hdots,x_d)=P(X_1\leq x_1, \hdots, X_d\leq x_d)$
     \item The copula $C(u_1,\hdots,c_d)=H(F\inv_1(u_1),\hdots,F\inv_d(u_d))$
 \end{enumerate}
 
 \subsubsection{Marginal cdfs (theory)}
 Assume the random variables $X_1,\hdots, X_d$ follow a ML model with i.i.d shock random variables $Z_1,\hdots, Z_d$ and ML coefficient matrix 
 \[ B=\begin{bmatrix}
-&b_{11} &b_{12}&\hdots& b_{1n-1}& b_{1n}\\
-&b_{21} &b_{22}&\hdots& b_{2n-1}& b_{2n}\\
+&b_{11} &b_{12}&\hdots& b_{1d-1}& b_{1d}\\
+&b_{21} &b_{22}&\hdots& b_{2d-1}& b_{2d}\\
 &\vdots&\vdots&\ddots & \vdots& \vdots \\
 &\vdots&\vdots&\hdots & \ddots& \vdots \\
-&b_{n1}& b_{n2} & \hdots &b_{nn-1}& b_{nn}\\
+&b_{d1}& b_{d2} & \hdots &b_{d-1}& b_{d}\\
 \end{bmatrix}
 \]
 Where $b_{ij}$ is the maximum weight associated with any path from $i$ to $j$. We can calculate the marginal cdf for each of the $X_k$:
@@ -252,7 +257,7 @@ Where $b_{ij}$ is the maximum weight associated with any path from $i$ to $j$. W
     &=\prod_{j=1}^dP(Z_j\leq \frac{x_k}{b_{jk}})\\
     &=\prod_{j=1}^dF_{Z_j}( \frac{x_k}{b_{jk}})
 \end{align*}
-Now, if we assume that $Z_i\overset{iid}{\thicksim}$ Frechet$(\alpha)$ we get the following result
+Now, if we assume that $Z_i\overset{iid}{\thicksim}$ Fréchet $(\alpha)$ we get the following result
 \begin{align*}
     F_{k}(x_k)&=\prod_{j=1}^d\exp\bigg\{{-\big(\frac{x_k}{b_{jk}}}\big)^{-\alpha}\bigg\}\\
     &=\exp\bigg\{{-\sum_{j=1}^d\big(\frac{x_k}{b_{jk}}}\big)^{-\alpha}\bigg\}\\
@@ -263,13 +268,13 @@ It is important to note that if $j\notin An(k)$ then $b_{jk}=0$. This means that
 \subsubsection{Marginal cdfs (from data)}
 From the data, we have $$\{(X_{11},\hdots,X_{1d}), \hdots, (X_{n1}, \hdots X_{nd})\}$$To build a copula, we need the points 
 $$\{(F_1(X_{11}),\hdots,F_d(X_{1d})), \hdots, (F_1(X_{n1}), \hdots F_d(X_{nd}))\}$$
-To represent a sample from $C$. Because we do not have the analytic values for $\{F_1,\hdots,F_d\}$, we estimate them using the following formula
+To represent a sample from $C$, because we do not have the analytic values for $\{F_1,\hdots,F_d\}$, we estimate them using the following formula:
 $$\widehat{F}_i(x)=\frac{1}{n}\sum_{j=1}^n\mathbbm{1}(X_{ij}\leq x)$$
-This is an application of the \textbf{rank plot} method. Essentially, for each random variable $X_{i}$, we rank all observations from smallest to greatest. Then, the rank (position in observation vector) of each observation helps us build our cdf $F_i$. In practice, we use 
+This is an application of the \textbf{rank plot} method. Essentially, for each random variable $X_{i}$, we rank all observations from smallest to greatest. Then, the rank (position in observation vector) of each observation helps us build our cdf $F_i$. The marginal cdf of each random variable evaluated at $x$ is calculated by dividing the number of observations greater than $x$ by the total number of observations. In practice, we use 
 $$\widehat{F}_i(x)=\frac{1}{n+1}\sum_{j=1}^n\mathbbm{1}(X_{ij}\leq x)$$
 because it leads to nicer results.
 \subsubsection{Joint cdf}
-In general, the joint cdf $H$ can be calculated in the following way:
+In general, the joint cdf $H$ of random variables following a max-linear model can be calculated in the following way:
 \begin{align*}
     H(x_1,\hdots, x_d)&=P(X_1\leq x_1,\hdots,X_d\leq x_d)\\
     &=P(\bigvee_{j=1}^db_{j1}Z_j\leq x_1, \hdots, \bigvee_{j=1}^db_{jd}Z_j\leq x_d)\\
@@ -284,8 +289,8 @@ When we deal with Frechét shock, this simplifies.
     &=\exp\bigg\{ -\sum_{i=1}^d \bigvee_{k=1}^d \bigg( \frac{b_{ik}}{x_k} \bigg)^\alpha \bigg\}\\
     &=\exp\bigg\{ -\sum_{i=1}^d \bigvee_{k=1}^d \bigg( \frac{b_{ik}}{x_k} \bigg)^\alpha \bigg\}
 \end{align*}
-Again we note that the sum indices can be changed to be in terms of ancestors. This is because for any two random variables $i,k$, if $i \notin An(k)$, then $b_{ik}=0$. So we can write 
-$$H(x_1,\hdots,x_d)=\exp\bigg\{ -\sum_{i\in An(k)} \bigvee_{k=1}^d \bigg( \frac{b_{ik}}{x_k} \bigg)^\alpha \bigg\}$$
+Again we note that the index of the max operator can be changed to be in terms of ancestors. This is because for any two random variables $i,k$, if $i \notin An(k)$, then $b_{ik}=0$. So we can write 
+$$H(x_1,\hdots,x_d)=\exp\bigg\{ -\sum_{k=1}^d  \bigvee_{i\in An(k)}\bigg( \frac{b_{ik}}{x_k} \bigg)^\alpha \bigg\}$$
 
 \subsubsection{Building the Copula}
 Now, we can put it all together to find the copula.
@@ -303,24 +308,30 @@ H(x_1,\hdots,x_d)&=\exp\bigg\{ -\sum_{i=1}^d \bigvee_{k=1}^d \bigg( \frac{b_{ik}
      &=\prod_{i=1}^d\exp\bigg\{ \bigwedge_{k=1}^d \log(u_k^\frac{b_{ik}^\alpha}{a_k})\bigg\}\\
      \ds&=\prod_{i=1}^d \bigwedge_{k=1}^d u_k^\frac{b_{ik}^\alpha}{a_k}
 \end{align*}
-This is the copula for a ML model with Frechét shock.
+This is the copula for a ML model with Frechét shock. Note that using the same indexing trick that we have applied before, we can rewrite this as
+$$C(u_1,\hdots,u_d)=\prod_{k=1}^d 1\wedge\bigg\{ \bigwedge_{i\in An(k)} u_k^\frac{b_{ik}^\alpha}{a_k}\bigg\}$$
 
 \section{Extreme Value Copulas}
 \begin{definition}[{Extreme Value Copula}]\footnote{def from Bivariate EVC paper}
-A bivariate copula $C$ is termed an \textbf{Extreme Value Copula} if, $\forall \ t>0, u,v\in[0,1]$, $C(u^t,v^t)=C(u,v)^t$. A finite measure $\delta$ acting on the unit simplex (triangle/set of points that add up to one) uniquely characterizes these copulas. This measure also defines a \textbf{dependence function} $A$ which (in the bivariate case) also uniquely characterizes an EVC. In fact, a copula $C$ is an EVC iff
+A bivariate copula $C$ is termed an \textbf{Extreme Value Copula} if, $\forall \ t>0, u,v\in[0,1]$, $C(u^t,v^t)=C(u,v)^t$. A finite measure $\delta$ acting on the unit simplex (triangle/set of points that add up to one) uniquely characterizes such copulas. This measure also defines a \textbf{dependence function} $A$ which (in the bivariate case) also uniquely characterizes an EVC. In fact, a copula $C$ is an EVC iff
 \begin{align*}
     C(u,v)=(uv)^{A\big( \frac{\log u}{\log uv} \big)}, \hspace{1cm} u,v\in[0,1]\tag{1}
 \end{align*}
 \end{definition}
 For the rest of this section, unless specifically noted, we will be exclusively working with bivariate EVCs.
 \subsection{Spectral Measure}
-First, lets define the unit simplex $S_2=\{(u,v)\in [0,1]^2:u+v=1 \}$. Then, the EVC's measure $\delta$ is a finite measure on $S_2$ called the \textbf{spectral measure} satisfies the condition:
+First, lets define the unit simplex: $S_2=\{(u,v)\in [0,1]^2:u+v=1 \}$. Then, the EVC's measure $\delta$ is a finite measure on $S_2$ called the \textbf{spectral measure} satisfies the condition:
 $$\int_{S_2}ud\delta(u,v)=\int_{S_2}vd\delta(u,v)=1$$
-From this, it is simple to see that $\delta(S_2)=2$. Now, let us consider another measure on this set $\delta^*$ such that $\ds\delta^*=\frac{\delta}{2}$. We note that this transformation of $\delta$ is a probability measure with the unit simplex as support. In fact, 
+From this, it is simple to see that $\delta(S_2)=2$.
+\begin{align*}
+    \delta(S_2)&=\int_{S_2}d\delta(u,v)\\
+    &=\int_{S_2}(u+v)d\delta(u,v)\\
+    &=\int_{S_2}ud\delta(u,v)+\int_{S_2}vd\delta(u,v)=2
+\end{align*}Now, let us consider another measure on this set $\delta^*$ such that $\ds\delta^*=\frac{\delta}{2}$. We note that this transformation of $\delta$ is a probability measure with the unit simplex as support. In fact, 
 $$(X,Y)\thicksim \delta^* \implies \E[X]=\E[Y]=\frac{1}{2}$$
 
-\subsection{Dependence Function}
-From the copula measure, we define the \textbf{dependence function} as 
+\subsection{Pickands Dependence Function}
+From the copula measure, we define the \textbf{dependence function} (or Pickands dependence function) as 
 $$A(t)=2*\E[(tX\vee ((1-t)Y)]$$ 
 Where $X,Y\thicksim \delta^*$. $A$ also has the following properties:
 \begin{itemize}
@@ -340,13 +351,48 @@ $$X\thicksim \delta^* \implies \E[X]=\E[1-X]=\frac{1}{2}$$
 Similarly, we can redefine our dependence function as 
 $$A(t)=2* \E[(tX\vee ((1-t)(1-X))]$$
 
-\subsection{Representation of Bivariate EVCs}
+\subsection{Reparameterized Dependence Function}
 Lets say our finite measure $\delta^*$ defines a discrete random variable $X$ with d atoms $\{a_1, \hdots, a_d\}$ each having a probability associated to it $\{p_1, \hdots, p_d\}$. Then, to calculate our copula, we must first calculate the dependence function:
 \begin{align*}
     A(t)&=2* \E[(tX\vee (1-t)(1-X))]\\
     &=2*\sum_{i=1}^d(ta_i\vee (1-t)(1-a_i))p_i
 \end{align*}
-Then, the first step to using (1) to calculate the copula is to calculate $A$:
+Now, we can use this to explicitly determine the form of the dependence function. Assume WLOG that the atoms are ordered such that $i<j \implies a_i<a_j \forall \ 1<i,j<d$. Then, $A(t)$ can be written as 
+\begin{align*}
+    A(t)=\begin{cases}
+    2 (1-t)\sum_{i=1}^d(1-a_i)p_i & 0\leq t\leq 1-a_d\\
+    \hdotsfor{1}\\
+    2\bigg\{t\sum_{j=k}^d(a_jp_j)+(1-t)\sum_{i=1}^{k-1}(1-a_i)p_i\bigg\}& 1-a_k\leq t\leq 1-a_{k-1}\\
+    \hdotsfor{1}\\
+    2t\sum_{i=1}^da_ip_i& 1-a_1\leq t\leq 1
+    \end{cases}
+\end{align*}
+It is important to note that we have continuity at each segment. 
+We can generalize this formula. The above equation assumes that we do not have any atoms at 0 or 1. Let us maintain the ordering on the atoms but  assume that we an atom at 0 and an atom at 1(i.e. $a_1=0$ and $a_d=1$). Then, the general form of the dependence function becomes
+$$\ds A(t)=2(1-t)p_1 + 2tp_d+2\sum_{i=2}^{d-1}(ta_i\vee (1-t)(1-a_i))p_i$$
+The piecewise description of the function now becomes
+\begin{align*}
+    A(t)=\begin{cases}
+    2\bigg\{(1-t)p_1 + tp_d+  (1-t)\sum_{i=2}^{d-1}(1-a_i)p_i \bigg\}& 0\leq t\leq 1-a_{d-1}\\
+    \hdotsfor{1}\\
+    2\bigg\{(1-t)p_1 + tp_d+ t\sum_{j=k}^{d-1}(a_jp_j)+(1-t)\sum_{i=2}^{k-1}(1-a_i)p_i\bigg\}& 1-a_k\leq t\leq 1-a_{k-1}\\
+    \hdotsfor{1}\\
+     2\bigg\{(1-t)p_1 + tp_d+t\sum_{i=2}^{d-1}a_ip_i\bigg\}& 1-a_2\leq t\leq 1
+    \end{cases}
+\end{align*}
+\subsection{Analysis of $A(t)$}
+Given the piecewise dependence function $A(t)$, we may want to recover the atoms $\{a_1,\hdots,a_d\}$ and their associated probabilities $\{p_1,\hdots,p_d\}$. To do this, we use the continuity of the function at the ``kinks" $\ds \{1-a_i\}_{i=2}^{d-1}$. For any interval, $1-a_k\leq t\leq 1-a_{k-1}$, we can evaluate $A(t)$ at the endpoints and consider the difference $A(1-a_k)-A(1-a_{k-1})$.
+\begin{align*}
+    A(1-a_k)&=2\bigg\{a_kp_1 + (1-a_k)p_d+ (1-a_k)\sum_{j=k}^{d-1}(a_jp_j)+a_k\sum_{i=2}^{k-1}(1-a_i)p_i\bigg\}\tag{*}\\
+    A(1-a_{k-1})&=2\bigg\{a_{k-1}p_1 + (1-a_{k-1})p_d+ (1-a_{k-1})\sum_{j=k}^{d-1}(a_jp_j)+a_{k-1}\sum_{i=2}^{k-1}(1-a_i)p_i\bigg\}\tag{**}\\
+    \frac{(*)-(**)}{(a_{k-1}-a_k)}&=2\bigg\{-p_1+p_d +\sum_{j=k}^{d-1}a_jp_j -\sum_{j=2}^{k-1}p_j+\sum_{j=2}^{k-1}a_jp_j\bigg\}\\
+    &=2\bigg\{ \sum_{j=1}^da_jp_j -\sum_{j=1}^{k-1}p_j \bigg\}=2\bigg\{ \E[X]-\sum_{j=1}^{k-1}p_j\bigg\}\\
+    &=2\bigg\{ \frac{1}{2}-\sum_{j=1}^{k-1}p_j \bigg\}
+\end{align*}
+From this, we can recover the probabilities recursively. It is important to note that the left hand side is proportional (up to a factor of -1) to the slope of $A(t)$ on the interval $[1-a_k, 1-a_{k-1}]$ and is therefore similarly proportional to the derivative at every point in this interval.
+\subsection{Representation of Bivariate EVCs}
+Now, 
+the first step to using (1) to calculate the copula is to calculate $A$:
 \begin{align*}
 \bar{a}_i&=1-a_i \hspace{1cm} \forall 1\leq i\leq d\\
     A\big( \frac{\log u}{\log uv} \big)&=2*\sum_{i=1}^d\bigg(\frac{\log u}{\log uv}a_i\vee(1-\frac{\log u}{\log uv})\bar{a}_i\bigg)p_i\\
@@ -365,18 +411,52 @@ Now we use this to calculate the copula:
 From this, we see that any bivariate EVC copula can be retrieved from the product of other copulas. This follows \textbf{Theorem 1} from \footnote{Insert paper name here} that states that any copula $C$ can be written as 
 $$C(u,v)= \prod_{i=1}^dC_{a_i,\bar{a}_i}^{p_i}$$
 where $C_{a_i,\bar{a}_i}$ is a copula of the form $C_{s,t}(u,v)=\min(u^s,v^t)$ and $\sum_{i=1}^dp_i=1$. Because the spectral measure used above differs from the paper's [1] measure by a factor of $\frac{1}{2}$ we find that the sum of our exponent is 2 rather than 1.
-\subsection{Bivariate EVCs and Our Model}
-Now, we may want to rewrite the copula that arises from our model in the bivariate EVC form. For this, we will only consider two nodes at a time. Consider a bivariate EVC with atoms at points $\ds\{c_j\}_{j=1}^2$\footnote{What exactly do the atoms relate to? Values for rv? more details }
+\newpage
+\section{Bivariate EVCs and Max-Linear Models}
+Our goal is to compare the copula that arises from the max-linear model to bivariate EVCs. For this, we will alter slightly alter the copula that arises from the ML model. We set the variables $u_1=\hdots=u_d=1$ except for two variables denoted $u_{k1},u_{k2}$. The goal of this is to marginalise the copula so we only consider the joint distribution of two nodes at a time. The resulting copula is then 
+$$C(u_{k1},u_{k2})=\prod_{j=1}^du_{k1}^{\frac{b_{jk1}^\alpha}{a_{k1}}}\wedge u_{k2}^{\frac{b_{jk2}^\alpha}{a_{k2}}}$$
+We note that $j\notin An(k1)\cup An(k2)$ will contributes a factor of 1 to the product. So, the copula can the the following form:
+$$C(u_{k1},u_{k2})=\prod_{j=1,j\in An(k1)\cup An(k2) }^du_{k1}^{\frac{b_{jk1}^\alpha}{a_{k1}}}\wedge u_{k2}^{\frac{b_{jk2}^\alpha}{a_{k2}}}$$
+Let $D=\{j:j\in An(k1)\cup An(k2)\}$ with $|D|=n$. Then, we can consider a bivariate EVC with atoms at points $\ds\{q_1,\hdots,q_n\}$\footnote{What exactly do the atoms relate to? Values for rv? more details }
+$$C(u_{k1},u_{k2})= \prod_{j=1}^n u_{k1}^{2q_jp_j}\wedge u_{k2}^{2(1-q_j)p_j}$$
+From this, we can calculate the location of the atoms as well as their associated probabilities:
 \begin{align*}
-    \textit{From the model}&& C(u_1,u_2)&=\prod_{j=1}^2u_1^{\frac{b_{j1}^\alpha}{a_1}}\wedge u_2^{\frac{b_{j2}^\alpha}{a_2}}\\
-    \textit{From EVCs}&&C(u_1,u_2)&= \prod_{j=1}^2 u_1^{2c_jp_j}\wedge u_2^{(1-c_j)p_j} \\
+    \prod_{j=1,j\in An(k1)\cup An(k2)}^du_{k1}^{\frac{b_{jk1}^\alpha}{a_{k1}}}&\wedge u_{k2}^{\frac{b_{jk2}^\alpha}{a_{k2}}}=\prod_{j=1}^n u_{k1}^{2q_jp_j}\wedge u_{k2}^{2(1-q_j)p_j}\\
+    \implies p_j&=\frac{b_{jk1}^\alpha}{2a_{k1}}+\frac{b_{jk2}^\alpha}{2a_{k2}}\\
+    \implies q_j&=\frac{\frac{b_{jk1}^\alpha}{a_{k1}}}{\frac{b_{jk1}^\alpha}{a_{k1}}+\frac{b_{jk2}^\alpha}{a_{k2}}} \tag{2}
 \end{align*}
-From these, we can solve a simple system of equations to see that 
+\subsection{Case Analysis}
+For equation (2) to be well defined, we need to do a case analysis on $b_{jk1}$ and $b_{jk2}$. 
+\begin{itemize}
+    \item If $j\in An(k1)\cup An(k2)$ then both $b_{jk1}\neq 0$ and $b_{jk2}\neq 0$ so our $q_j$ is well defined and $q_i\in (0,1)$.
+    \item If $j\in An(k1),j\notin An(k2)$ then $b_{jk1}\neq 0$ but $b_{jk2}= 0$ so $q_j=1$.
+    \item If $j\notin An(k1),j\in An(k2)$ then $b_{jk1}= 0$ so $q_j=0$.
+    \item If $j\notin An(k1),j\notin An(k2)$ then $b_{jk1}= 0$ and $b_{jk2}= 0$ then $j$ does not appear in our product and therefore has no corresponding atom.
+\end{itemize}
+From this case analysis, we see that when comparing nodes of a ML model pairwise it is enough to to consider only the nodes appearing in the union of the ancestral set of each of the nodes.
 
-$$\prod_{j=1}^2 u_1^{2c_jp_j}\wedge u_2^{(1-c_j)p_j}=\prod_{j=1}^2u_1^{\frac{b_{j1}^\alpha}{a_1}}\wedge u_2^{\frac{b_{j2}^\alpha}{a_2}}\implies p_j=\frac{b_{j1}^\alpha}{2a_1}+\frac{b_{j2}^\alpha}{2a_2}$$
-From this, we can then calculate the location of the atoms 
-$$\ds c_j=\frac{\frac{b_{j1}^\alpha}{a_1}}{\frac{b_{j1}^\alpha}{a_1}+\frac{b_{j2}^\alpha}{a_2}}$$
- 
- 
+\subsection{Calculating $A(t)$ From B}
+Now, given a max linear coefficient matrix b, we can calculate each of the probabilities and the associated atoms. This method is explored at length in the code section of this report.
+
+\subsection{Calculating B from $A(t)$}
+Now, given the Pickands dependence function between two nodes of our ML model, we may want to generate a matrix $C$ whose entries are proportional to the entries of $B$. We define the matrix
+\[ C=\begin{bmatrix}
+&c_{11} &c_{12}&\hdots& c_{1d-1}& c_{1d}\\
+&c_{21} &c_{22}&\hdots& c_{2d-1}& c_{2d}\\
+&\vdots&\vdots&\ddots & \vdots& \vdots \\
+&\vdots&\vdots&\hdots & \ddots& \vdots \\
+&c_{d1}& c_{d2} & \hdots &c_{dd-1}& c_{dd}\\
+\end{bmatrix}
+\]
+Where  $$c_{ij}=\frac{b^\alpha_{ij}}{\sum_{k=1}^db_{kj}^\alpha}$$
+To retrieve this matrix from $A(t)$, we first define the Pickands dependence function between nodes $X_{i_1}$ and $X_{i_2}$ as $A_{i_1i_2}(t)$ and assume is given to us as the atom locations $\{q_1,...,q_n\}$ and their associated probabilities $\{p_1,...,p_n\}$. From section 4.5, we have seen how to extract these given a particular dependence function\footnote{How to extract atom location?}. Now, by construction, we see that 
+$$c_{ji_1}=2q_jp_j$$
+
+
+
+
+
+
+
  
 \end{document}
