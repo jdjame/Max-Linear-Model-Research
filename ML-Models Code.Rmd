@@ -10,6 +10,11 @@ output: pdf_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+```{r}
+library(knitr)
+opts_chunk$set(tidy.opts=list(width.cutoff=40),tidy=TRUE)
+```
+
 ```{r echo=FALSE}
 suppressWarnings(suppressMessages(library(network)))
 suppressWarnings(suppressMessages(library(sna)))
@@ -130,27 +135,11 @@ exponential.1<-data_gen(coef.mat,dist="exponential",samples=100)
 pobs <- apply(exponential.1,2,rank)/(101)
 pairs(pobs)
 ```
-From this, we can see something. I fear I am not trained enough to fully understand this though
 
 \subsubsection{1000 Samples}
 ```{r}
 exponential.2<-data_gen(coef.mat,dist="exponential",samples=1000)
 pobs <- apply(exponential.2,2,rank)/(1001)
-pairs(pobs)
-```
-
-\subsubsection{10000 Samples}
-```{r}
-exponential.3<-data_gen(coef.mat,dist="exponential",samples=10000)
-pobs <- apply(exponential.3,2,rank)/(10001)
-pairs(pobs)
-```
-
-
-\subsubsection{100000 Samples}
-```{r}
-exponential.4<-data_gen(coef.mat,dist="exponential",samples=100000)
-pobs <- apply(exponential.4,2,rank)/(100001)
 pairs(pobs)
 ```
 
@@ -171,17 +160,163 @@ pobs <- apply(frechet.2,2,rank)/(1001)
 pairs(pobs)
 ```
 
-\subsubsection{10000 Samples}
+
+\section{Learning $A(t)$ from B Matrix}
+In this section, we will try to learn the $A_{ij}(t)$ for all the pairs $X_i,X_j$ in our $B$ Matrix. Unless explicitly stated, we will assume we are working with Frechét shock.
+
+First, we write a function to compute the $C$ matrix. The entries of this matrix are defined as $c_{ij}=\frac{b_{ij}^\alpha}{\sum_{k=1}^db_{kj}^\alpha}$
 ```{r}
-frechet.3<-data_gen(coef.mat,dist="frechet",samples=10000)
-pobs <- apply(frechet.3,2,rank)/(10001)
-pairs(pobs)
+#adjacency matrix
+m_mat<-c(2,3,4,1,
+         0,2,0,4,
+         0,0,3,5,
+         0,0,0,2)
+#b matrix
+coef.mat<-ml_gen(m,m_mat)
+#function to calculate the sum a_ks 
+c_ij<-function(column,alpha){ 
+  column_exp<-column^alpha
+  #column sum 
+  a_j<-sum(column_exp)
+  #simple return statement
+  return (column_exp/a_j)
+}
+c_generator<-function(b_mat, alpha){
+  #for each column in the matrix calculate c_ij
+  return (apply(b_mat, 2, function(col) c_ij(col, alpha)))
+}
+#now we generate the whole matrix 
+c_matrix<-c_generator(coef.mat,2)
+c_matrix
 ```
 
-\subsubsection{100000 Samples}
+Now that we can construct this matrix, we will write a function to learn $A(t)$ based on the $C$ matrix. To do this, we need to consider the $d(d-1)$ unique pairs $i,j$ of the columns of the $C$ matrix. Each of these will have $|An(i)\cup An(j)|\leq d$ atoms to consider.
+
 ```{r}
-frechet.4<-data_gen(coef.mat,dist="frechet",samples=100000)
-pobs <- apply(frechet.4,2,rank)/(100001)
-pairs(pobs)
+one_read<-function(r_1,r_2){
+  #this function takes in one read of two columns and outputs the probability and atoms associated with the read. 
+  # if there is not one, it outputs none
+  if(r_1==0 && r_2==0){
+    #either return -1 or return null
+    return(c(-1,0))
+  }
+  #first we calculate the probability
+  p_j<-r_1/2+r_2/2
+  #then we calculate the atom location
+  q_j<-r_1/(2*p_j)
+  #return (atom,probability)
+  return (c(q_j,p_j))
+}
+#this function computes the atoms and probabilities associated with two columns of our c matrix
+paired_prob_atom_generator<-function(row_1,row_2){
+  #this function takes in two rows of the C matrix and outputs the atoms and probabilities associated with this pairing
+  return(rbind(mapply(function(r_1,r_2) one_read(r_1,r_2),row_1,row_2)))
+}
+
+#this function takes in the c matrix and outputs the density points
+prob_atom_generator<-function(c_matrix){
+  n<-ncol(c_matrix)
+  #this loop just gives me all distinct pairings of the rvs in the c matrix
+  distinct_pairs<-c()
+  
+  #if we want to compare only d many interactions 
+  #for(i in 1:(n-1)){
+  #  distinct_pairs<-rbind(distinct_pairs,c(i,i+1))
+  #}
+  #distinct_pairs<-rbind(distinct_pairs,c(n,1))
+  
+  #if we want to compare d(d-1) interactions
+  for(i in 1:n){
+    for(j in i+1:n){
+      if(j<=n) distinct_pairs<-rbind(distinct_pairs,c(i,j))
+    }
+  }
+  
+  #return(distinct_pairs)
+  output<-data.frame()
+  #now distinct_pairs is the distinct pairs, we can iterate through this list to ps and qs
+  pqs<-apply(distinct_pairs, 1, function(x,...) 
+    list(name=paste(x[1],x[2],sep="_"),value=paired_prob_atom_generator(c_matrix[,x[1]],c_matrix[,x[2]])))
+  #now, we have a list of pq pairs. each labeled with the index of the columns being compared
+  return(pqs)
+}
+#for any c matrix, this generates the list of pairwise ps and qs
+x<-prob_atom_generator(c_matrix)
 ```
+Now, given a C matrix, we are able to calulate the pairwise atom locations and their associated probabilities. For completeness, the next block of code transoforms this information and calculates the  continuous fucntion $A(t)$.
+```{r}
+test<-x[[1]]$value
+a_t_generator<-function(pqs){
+  #given a list of matrices of the form
+  #qis
+  #pis
+  #this function outputs the function A(t)
+  #unzip the list of matrixes into a list of tuples
+  ps=pqs[2,]
+  qs=pqs[1,]
+  
+  #transofrming into a data frame
+  pqs<- data.frame("Probabilities" = ps, "Atoms" = qs)
+  
+  #sorting them by the atom location
+  pqs<-pqs[order(pqs$Atoms),]
+  #now we define the function that will return A(t)
+  A<-function(t){
+    #kinks 
+    atoms<- 1-pqs$Atoms
+    kinks<- data.frame("Probabilities" = pqs$Probabilities, "Atoms" = pqs$Atoms,"NegAtoms"=atoms)
+
+    #add t to our kinks
+    atoms["New"]<-t
+    atoms2<-sort(atoms,decreasing=FALSE,index.return=TRUE)
+    #see where it lies in list (first time we see a number == t)
+    pos<-(which(unlist(atoms2)==t))[1]
+    
+    #now we have our position calculator
+    position_calc<-function(x){
+      if ((which(unlist(atoms2)==x[["NegAtoms"]]))[1] <pos ){
+        return (2* (1-x[["Atoms"]]) *(1-t) * x[["Probabilities"]] )
+      }
+      else{
+        return (2*((x[["Atoms"]])*(t))*x[["Probabilities"]])
+      }
+      }
+    vec<-apply(kinks,1,position_calc)
+    return (sum(vec))
+  }
+  
+  return(A)
+
+}
+A<-a_t_generator(test)
+```
+\section{Learning the $C$ matrix from $A(t)$}
+Now, given the pickands dependence function between two nodes of our ML model, we may want to generate the $C$ matrix. To do this, we consider the following approach. First, Assume the function $A(t)$ is given to us as the atom locations $\{q_1,...,q_n\}$ and their associated probabilities $\{p_1,...,p_n\}$
+
+```{r}
+#Given Ai1,i2(t) as a list of ps and qs, we can easily recover the column c_*i1
+c_column_from_pqs<-function(ps,qs){
+  return(2*ps*qs)
+}
+
+#given a list of Ai1,i2(t) where no i1 is the same, we are able to recover the C matrix
+c_recovery<-function(A_list){
+  n<-length(A_list)
+  ret<-matrix(, nrow = n, ncol = n)
+  
+  lapply(A_list, function(x){
+    i1<-strsplit(x$name, "_")[[1]][1]
+    qs<-x$value[1,]
+    ps<-x$value[2,]
+    col<-c_column_from_pqs(ps,ps)
+    ret[,as.double(i1)]=col
+  })
+  return(ret)
+}
+x
+```
+
+
+
+
 
