@@ -413,27 +413,40 @@ $$C(u,v)= \prod_{i=1}^dC_{a_i,\bar{a}_i}^{p_i}$$
 where $C_{a_i,\bar{a}_i}$ is a copula of the form $C_{s,t}(u,v)=\min(u^s,v^t)$ and $\sum_{i=1}^dp_i=1$. Because the spectral measure used above differs from the paper's [1] measure by a factor of $\frac{1}{2}$ we find that the sum of our exponent is 2 rather than 1.
 \newpage
 \section{Bivariate EVCs and Max-Linear Models}
-Our goal is to compare the copula that arises from the max-linear model to bivariate EVCs. For this, we will alter slightly alter the copula that arises from the ML model. We set the variables $u_1=\hdots=u_d=1$ except for two variables denoted $u_{k1},u_{k2}$. The goal of this is to marginalise the copula so we only consider the joint distribution of two nodes at a time. The resulting copula is then 
-$$C(u_{k1},u_{k2})=\prod_{j=1}^du_{k1}^{\frac{b_{jk1}^\alpha}{a_{k1}}}\wedge u_{k2}^{\frac{b_{jk2}^\alpha}{a_{k2}}}$$
-We note that $j\notin An(k1)\cup An(k2)$ will contributes a factor of 1 to the product. So, the copula can the the following form:
-$$C(u_{k1},u_{k2})=\prod_{j=1,j\in An(k1)\cup An(k2) }^du_{k1}^{\frac{b_{jk1}^\alpha}{a_{k1}}}\wedge u_{k2}^{\frac{b_{jk2}^\alpha}{a_{k2}}}$$
-Let $D=\{j:j\in An(k1)\cup An(k2)\}$ with $|D|=n$. Then, we can consider a bivariate EVC with atoms at points $\ds\{q_1,\hdots,q_n\}$\footnote{What exactly do the atoms relate to? Values for rv? more details }
-$$C(u_{k1},u_{k2})= \prod_{j=1}^n u_{k1}^{2q_jp_j}\wedge u_{k2}^{2(1-q_j)p_j}$$
-From this, we can calculate the location of the atoms as well as their associated probabilities:
+Our goal is to compare the copula that arises from the max-linear model to bivariate EVCs. For this, we will alter slightly alter the copula that arises from the ML model. We set the variables $u_1=\hdots=u_d=1$ except for two variables denoted $u_{k_1},u_{k_2}$. The goal of this is to marginalise the copula so we only consider the joint distribution of two nodes at a time. The resulting copula is then 
+$$C(u_{k_1},u_{k_2})=\prod_{j=1}^du_{k_1}^{\frac{b_{jk_1}^\alpha}{a_{k_1}}}\wedge u_{k_2}^{\frac{b_{jk_2}^\alpha}{a_{k_2}}}$$
+We note that $j\notin An(k_1)\cup An(k_2)$ will contribute a factor of 1 to the product. So, the copula can the the following form:
+$$C(u_{k_1},u_{k_2})=\prod_{j=1,j\in An(k_1)\cup An(k_2) }^du_{k_1}^{\frac{b_{jk_1}^\alpha}{a_{k_1}}}\wedge u_{k_2}^{\frac{b_{jk_2}^\alpha}{a_{k_2}}}$$
+Let $D_0=\{l:l\in An(k_1)\cap An(k_2)\}$ with $|D_0|=n$, $D_1=\{l:l\in An(k_1)\setminus An(k_2)\}$, and $D_2=\{l:l\in An(k_2)\setminus An(k_1)\}$. The above product can then be written as:
+$$C(u_{k_1},u_{k_2})=\prod_{j_l\in D_1 }u_{k_1}^{\frac{b_{j_lk_1}^\alpha}{a_{k_1}}} \prod_{j_l\in D_2 }u_{k_2}^{\frac{b_{j_lk_2}^\alpha}{a_{k_2}}}\prod_{l=1,j_l\in D_0 }^n u_{k_1}^{\frac{b_{j_lk_1}^\alpha}{a_{k_1}}}\wedge u_{k_2}^{\frac{b_{j_lk_2}^\alpha}{a_{k_2}}}$$
+Now, let us consider a bivariate EVC with atoms at points $\ds\{q_0,\hdots,q_{n+1}\}$ where $q_0=0$ and $q_{n+1}=1$:
+$$C(u_{k_1},u_{k_2})= u_{k_1}^{2p_{n+1}} \times u_{k_2}^{2p_0}\times  \prod_{l=1}^{n} u_{k_1}^{2q_lp_l}\wedge u_{k_2}^{2(1-q_l)p_l}$$
+From this, we can calculate the location of the atoms as well as their associated probabilities. First we start with the set of common ancestors $D_0$:
 \begin{align*}
-    \prod_{j=1,j\in An(k1)\cup An(k2)}^du_{k1}^{\frac{b_{jk1}^\alpha}{a_{k1}}}&\wedge u_{k2}^{\frac{b_{jk2}^\alpha}{a_{k2}}}=\prod_{j=1}^n u_{k1}^{2q_jp_j}\wedge u_{k2}^{2(1-q_j)p_j}\\
-    \implies p_j&=\frac{b_{jk1}^\alpha}{2a_{k1}}+\frac{b_{jk2}^\alpha}{2a_{k2}}\\
-    \implies q_j&=\frac{\frac{b_{jk1}^\alpha}{a_{k1}}}{\frac{b_{jk1}^\alpha}{a_{k1}}+\frac{b_{jk2}^\alpha}{a_{k2}}} \tag{2}
+    \prod_{l=1,j_l\in D_0}^nu_{k_1}^{\frac{b_{j_lk_1}^\alpha}{a_{k_1}}}&\wedge u_{k_2}^{\frac{b_{j_lk_2}^\alpha}{a_{k_2}}}=\prod_{l=1}^{n} u_{k_1}^{2q_lp_l}\wedge u_{k_2}^{2(1-q_l)p_l}\\
+    \implies p_l&=\frac{b_{j_lk_1}^\alpha}{2a_{k_1}}+\frac{b_{j_lk_2}^\alpha}{2a_{k_2}}\\
+    \implies q_l&=\frac{\frac{b_{j_lk_1}^\alpha}{a_{k_1}}}{\frac{b_{j_lk_1}^\alpha}{a_{k_1}}+\frac{b_{j_lk_2}^\alpha}{a_{k_2}}}% \tag{2}
 \end{align*}
-\subsection{Case Analysis}
-For equation (2) to be well defined, we need to do a case analysis on $b_{jk1}$ and $b_{jk2}$. 
-\begin{itemize}
-    \item If $j\in An(k1)\cup An(k2)$ then both $b_{jk1}\neq 0$ and $b_{jk2}\neq 0$ so our $q_j$ is well defined and $q_i\in (0,1)$.
-    \item If $j\in An(k1),j\notin An(k2)$ then $b_{jk1}\neq 0$ but $b_{jk2}= 0$ so $q_j=1$.
-    \item If $j\notin An(k1),j\in An(k2)$ then $b_{jk1}= 0$ so $q_j=0$.
-    \item If $j\notin An(k1),j\notin An(k2)$ then $b_{jk1}= 0$ and $b_{jk2}= 0$ then $j$ does not appear in our product and therefore has no corresponding atom.
-\end{itemize}
-From this case analysis, we see that when comparing nodes of a ML model pairwise it is enough to to consider only the nodes appearing in the union of the ancestral set of each of the nodes.
+Second, we consider the ancestor set $D_1$:
+\begin{align*}
+    \prod_{j_l\in D_1 }u_{k_1}^{\frac{b_{j_lk_1}^\alpha}{a_{k_1}}} &=  u_{k_1}^{2p_{n+1}}\\
+    \implies p_{n+1}&= \sum_{j_l \in D_1}\frac{b_{j_lk_1}^\alpha}{2a_{k_1}}
+\end{align*}
+Note that if $p_{n+1}=0$, then $An(k_1)\subseteq An(k_2)$. We have a similar result when we consider the set $D_2$:
+\begin{align*}
+    \prod_{j_l\in D_2 }u_{k_2}^{\frac{b_{j_lk_2}^\alpha}{a_{k_2}}} &=  u_{k_2}^{2p_{0}}\\
+    \implies p_{0}&= \sum_{j_l \in D_2}\frac{b_{j_lk_2}^\alpha}{2a_{k_2}}
+\end{align*}
+Where we note that if $p_0=0$, then $An(k_2)\subseteq An(k_1)$.
+%\subsection{Case Analysis}
+%For equation (2) to be well defined, we need to do a case analysis on $b_{jk_1}$ and $b_{jk_2}$. 
+%\begin{itemize}
+%    \item If $j\in An(k_1)\cup An(k_2)$ then both $b_{jk_1}\neq 0$ and $b_{jk_2}\neq 0$ so our $q_j$ is well defined and $q_i\in (0,1)$.
+%    \item If $j\in An(k_1),j\notin An(k_2)$ then $b_{jk_1}\neq 0$ but $b_{jk_2}= 0$ so $q_j=1$.
+%    \item If $j\notin An(k_1),j\in An(k_2)$ then $b_{jk_1}= 0$ so $q_j=0$.
+%    \item If $j\notin An(k_1),j\notin An(k_2)$ then $b_{jk_1}= 0$ and $b_{jk_2}= 0$ then $j$ does not appear in our product and therefore has no corresponding atom.
+%\end{itemize}
+%From this case analysis, we see that when comparing nodes of a ML model pairwise it is enough to to consider only the nodes appearing in the union of the ancestral set of each of the nodes.
 
 \subsection{Calculating $A(t)$ From B}
 Now, given a max linear coefficient matrix b, we can calculate each of the probabilities and the associated atoms. This method is explored at length in the code section of this report.
@@ -449,8 +462,20 @@ Now, given the Pickands dependence function between two nodes of our ML model, w
 \end{bmatrix}
 \]
 Where  $$c_{ij}=\frac{b^\alpha_{ij}}{\sum_{k=1}^db_{kj}^\alpha}$$
-To retrieve this matrix from $A(t)$, we first define the Pickands dependence function between nodes $X_{i_1}$ and $X_{i_2}$ as $A_{i_1i_2}(t)$ and assume is given to us as the atom locations $\{q_1,...,q_n\}$ and their associated probabilities $\{p_1,...,p_n\}$. From section 4.5, we have seen how to extract these given a particular dependence function\footnote{How to extract atom location?}. Now, by construction, we see that 
-$$c_{ji_1}=2q_jp_j$$
+To retrieve this matrix from $A(t)$, we first define the Pickands dependence function between nodes $X_{i_1}$ and $X_{i_2}$ as $A_{i_1i_2}(t)$ and assume it is given to us as the atom locations $\{q_0,...,q_{n+1}\}$ ($q_0=0, q_{n+1}=1$) and their associated probabilities $\{p_0,...,p_{n+1}\}$. From section 4.5, we have seen how to extract these given a particular dependence and its kinks. How can we use this to extract the $C$? In general, we can start by considering only the atoms in $(0,1)$. Using these atoms, we can recover the values $c_{j_li_1}$ and $c_{j_li_2}$ for any $j_l$ the set of common ancestors $(i.e. j_l \in An(i_1)\cap An(i_2))$. For any such $j_l$ we can find the corresponding $C$ entries using:
+\begin{align*}
+    c_{j_li_1}&=2q_lp_l\\
+    c_{j_li_2}&=p_l-q_lp_l
+\end{align*}
+The issue is, these are recovered without preserving any particular ordering on the original ancestral set. 
+First we consider a few edge cases:
+\begin{itemize}
+    \item If $p_0=0$, then we know that $An(i_2)\subseteq An(i_1)$. This means that 
+\end{itemize}
+Consider base case 2 lone nodes 
+then, you are golden because $p_0$ and $p_{n+1}$ will give us the result we want.
+
+
 
 
 
